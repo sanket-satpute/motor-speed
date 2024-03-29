@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1014440054975",
+    "firebase_url": "https://mq135-4864c-default-rtdb.firebaseio.com",
+    "project_id": "mq135-4864c",
+    "storage_bucket": "mq135-4864c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1014440054975:android:e30783b0d4755f679bf60a",
+        "android_client_info": {
+          "package_name": "com.example.motorspeed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLkmwOwEe0P6q6trmygfJIOic1YaHR-3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
