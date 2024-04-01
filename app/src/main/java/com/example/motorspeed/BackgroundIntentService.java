@@ -204,21 +204,19 @@ public class BackgroundIntentService extends Service {
     }
 
     private Notification createNotification(String channelId, String channelName) {
-        // Create a notification channel (required for Android Oreo and higher)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setContentTitle("Foreground Service Title")
+                .setContentText("Foreground Service Content")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT);
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
+            builder.setChannelId(channelId);
         }
 
-        // Build the notification
-        Notification.Builder builder = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            builder = new Notification.Builder(this, channelId)
-                    .setContentTitle("Foreground Service Title")
-                    .setContentText("Foreground Service Content");
-            return builder.build();
-        }
-        return null;
+        return builder.build();
     }
+
 }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Motor Speed</string>
+    <string name="app_name">Carbon Monitoring System</string>
 
     <array name="spinner_items">
         <item>Days</item>
