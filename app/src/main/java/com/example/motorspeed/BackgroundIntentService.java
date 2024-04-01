@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -44,11 +43,12 @@ public class BackgroundIntentService extends Service {
         if (!SERVICE_IS_ON) {
             Log.d(TAG, "Service started");
             SERVICE_IS_ON = true;
-            Notification serviceObj = createNotification("channel_id", "Channel Name");
-            if (serviceObj != null)
+            try {
+                Notification serviceObj = createNotification();
                 startForeground(NOTIFICATION_ID, serviceObj);
-            else
-                Toast.makeText(this, "Can't Start Notification Service", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             Thread thread = new Thread(this::registerListener);
             thread.start();
@@ -203,7 +203,9 @@ public class BackgroundIntentService extends Service {
         return null;
     }
 
-    private Notification createNotification(String channelId, String channelName) {
+    private Notification createNotification() {
+        String channelId = "foreground_channel";
+        String channelName = "Foreground Channel";
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
                 .setContentTitle("Foreground Service Title")
                 .setContentText("Foreground Service Content")
