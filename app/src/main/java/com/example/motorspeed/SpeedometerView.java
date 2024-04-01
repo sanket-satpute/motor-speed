@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SweepGradient;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 public class SpeedometerView extends View {
@@ -16,6 +17,7 @@ public class SpeedometerView extends View {
     private Paint speedometerPaint;
     private RectF speedometerRect;
     private Paint needlePaint;
+    private Paint textPaint;
     private float currentValue;
 
     private int targetProgress;
@@ -58,6 +60,11 @@ public class SpeedometerView extends View {
         needlePaint.setStyle(Paint.Style.STROKE);
         needlePaint.setStrokeWidth(5);
 
+        textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(Color.BLACK);
+        textPaint.setTextSize(20);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+
         currentValue = 0; // Initial value
 
         targetProgress = 0;
@@ -71,18 +78,12 @@ public class SpeedometerView extends View {
         super.onDraw(canvas);
         canvas.drawArc(speedometerRect, 135, 270, false, speedometerPaint);
 
+        drawSpeedLabels(canvas);
+
         float angle = 135 + (currentValue / 100) * 270;
         float x = (float) (250 + 150 * Math.cos(Math.toRadians(angle)));
         float y = (float) (250 + 150 * Math.sin(Math.toRadians(angle)));
         canvas.drawLine(250, 250, x, y, needlePaint);
-
-        // Check if animation is in progress
-        if (startTime != 0 && System.currentTimeMillis() - startTime < animationDuration) {
-            long elapsedTime = System.currentTimeMillis() - startTime;
-            float progress = (float) elapsedTime / animationDuration;
-            currentValue = interpolateValue(currentValue, targetProgress, progress);
-            invalidate(); // Trigger redraw
-        }
     }
 
     public void setCurrentValue(float value) {
@@ -94,6 +95,15 @@ public class SpeedometerView extends View {
             currentValue = value;
         }
         invalidate(); // Trigger redraw
+    }
+
+    private void drawSpeedLabels(Canvas canvas) {
+        for (int i = 0; i <= 100; i += 10) {
+            float angle = 135 + (i / 100f) * 270;
+            float x = (float) (250 + 180 * Math.cos(Math.toRadians(angle)));
+            float y = (float) (250 + 180 * Math.sin(Math.toRadians(angle)));
+            canvas.drawText(String.valueOf(i), x, y, textPaint);
+        }
     }
 
     public void updateScore(int progress, int score) {

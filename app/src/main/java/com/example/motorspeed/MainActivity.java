@@ -1,35 +1,21 @@
 package com.example.motorspeed;
 
+import static com.example.motorspeed.BackgroundIntentService.SERVICE_IS_ON;
+
 import android.animation.ValueAnimator;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.app.NotificationCompat;
 
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -37,12 +23,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private int rMin = 0;
     private int rMax = 100;
     private int xValue = 0;
-
+    private int airThreshold = 0;
 
     private DatabaseReference dbRef;
     private boolean fdateChecked = false;
@@ -67,14 +51,12 @@ public class MainActivity extends AppCompatActivity {
     private int fmonth = 0;
     private int fyear = 0;
     private int fhour = 0;
-    private int limit = 0;
-    private int xlimit = 0;
     int temperature = -1, temperature_limit = -1;
     private DatabaseReference databaseReference;
-    ValueEventListener minListener, maxListener, valListener, limitListener, xLimitListener, temperatureListener, temperatureLimitListener;
-    private ConstraintLayout dialogLayout;
-    private LineChart lineChart;
-    private TextView noDataMessage, scoreTxt, temp_txt, temp_celsius_txt, air_quality_msg;
+
+    ValueEventListener minListener, maxListener, valListener, temperatureListener, temperatureLimitListener, thresholdListener;
+
+    private TextView scoreTxt, temp_txt, temp_celsius_txt, air_quality_msg;
     private Button showHistoryButton;
 
     CircularProgressIndicator temperature_progress;
@@ -85,9 +67,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Intent inte = new Intent(this, BackgroundIntentService.class);
+
+        if (SERVICE_IS_ON)
+            stopService(inte);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(inte);
+        } else {
+            startService(inte);
+        }
+
         initViews();
         initDatabase();
+//        removeValues();
         onClick();
+    }
+
+    private void removeValues() {
+        DatabaseReference red = databaseReference.child("/db/dates");
+        for (int i = 11; i < 200; i++) {
+            red.child("/" + i).removeValue();
+        }
     }
 
     @Override
@@ -103,10 +103,9 @@ public class MainActivity extends AppCompatActivity {
         databaseReference.removeEventListener(maxListener);
         databaseReference.removeEventListener(minListener);
         databaseReference.removeEventListener(valListener);
-        databaseReference.removeEventListener(limitListener);
-        databaseReference.removeEventListener(xLimitListener);
         databaseReference.removeEventListener(temperatureListener);
         databaseReference.removeEventListener(temperatureLimitListener);
+        databaseReference.removeEventListener(thresholdListener);
     }
 
     private void initDatabase() {
@@ -114,9 +113,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        dialogLayout = findViewById(R.id.dialogLayout);
-//        lineChart = findViewById(R.id.chart);
-//        noDataMessage = findViewById(R.id.noDataMessage);
         showHistoryButton = findViewById(R.id.showHistoryButton);
         speedometerView = findViewById(R.id.speedometerView);
         temperature_progress = findViewById(R.id.temperature_progress_bar);
@@ -130,66 +126,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void onClick() {
         showHistoryButton.setOnClickListener(v -> {
-            if (dialogLayout.getVisibility() == View.VISIBLE) {
-                hideDialog();
-                showHistoryButton.setText("Show History");
-            } else {
-                showDialog();
-                showHistoryButton.setText("Hide History");
-            }
+            Intent intent = new Intent(this, SecondActivity.class);
+            startActivity(intent);
         });
-    }
-
-    private void showDialog() {
-        Button closeBtn;
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        View view = LayoutInflater.from(this).inflate(R.layout.graph_dialog_layout, null);
-        dialog.setView(view);
-
-        lineChart = view.findViewById(R.id.chart);
-        noDataMessage = view.findViewById(R.id.noDataMessage);
-        closeBtn = view.findViewById(R.id.closeDialogButton);
-
-        AlertDialog alert = dialog.create();
-        alert.show();
-
-        closeBtn.setOnClickListener(v -> alert.dismiss());
-
-//        dialogLayout.setVisibility(View.VISIBLE);
-//        dialogLayout.bringToFront();
-//        dialogLayout.requestFocus();
-//
-        databaseReference.child("db/dates/").get().addOnSuccessListener(dataSnapshot -> {
-            List<HashMap<String, Long>> pojo = (List<HashMap<String, Long>>) dataSnapshot.getValue();
-            if (pojo != null) {
-                if (pojo.size() > 0) {
-                    if (pojo.size() > 3) {
-                        noDataMessage.setVisibility(View.GONE);
-                        lineChart.setVisibility(View.VISIBLE);
-                        collectData(pojo);
-                    } else {
-                        noDataFoundTxt(-1);
-                    }
-                } else {
-                    noDataFoundTxt(0);
-                }
-            } else {
-                noDataFoundTxt(1);
-            }
-        });
-    }
-
-    private void collectData(List<HashMap<String, Long>> pojos) {
-        List<String> dates = new ArrayList<>();
-        List<Long> labels = new ArrayList<>();
-        for (int i = pojos.size() - 1; i > (pojos.size() - Math.min(pojos.size(), 7)); i--) {
-            dates.add(pojos.get(i).get("date") + "/" + pojos.get(i).get("month"));
-            labels.add(pojos.get(i).get("date_reading"));
-        }
-        Collections.reverse(labels);
-        Collections.reverse(dates);
-        setupLineChart();
-        addRandomDataToChart(dates, labels);
     }
 
     private void startFirebase() {
@@ -198,9 +137,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 temperature = dataSnapshot.getValue(Integer.class);
-                if (temperature >= temperature_limit) {
-                    warnByNotify(temperature, temperature_limit, 1);
-                }
                 temperatureAnimate(temperature, temperature_limit);
             }
 
@@ -215,9 +151,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 temperature_limit = dataSnapshot.getValue(Integer.class);
-                if (temperature >= temperature_limit) {
-                    warnByNotify(temperature, temperature_limit, 1);
-                }
                 temperatureAnimate(temperature, temperature_limit);
             }
 
@@ -227,38 +160,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         databaseReference.child("db").child("temp_limit").addValueEventListener(temperatureLimitListener);
-
-        limitListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                limit = dataSnapshot.getValue(Integer.class);
-                if (limit <= xlimit) {
-                    warnByNotify(xlimit, limit, 0);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.w(TAG, "Failed to read value.", databaseError.toException());
-            }
-        };
-        databaseReference.child("db").child("limit").addValueEventListener(limitListener);
-
-        xLimitListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                xlimit = dataSnapshot.getValue(Integer.class);
-                if (limit <= xlimit) {
-                    warnByNotify(xlimit, limit, 0);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.w(TAG, "Failed to read value.", databaseError.toException());
-            }
-        };
-        databaseReference.child("db").child("x_limit").addValueEventListener(xLimitListener);
 
         minListener = new ValueEventListener() {
             @Override
@@ -275,13 +176,27 @@ public class MainActivity extends AppCompatActivity {
         };
         databaseReference.child("db").child("sen_min").addValueEventListener(minListener);
 
+        thresholdListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                airThreshold = dataSnapshot.getValue(Integer.class);
+                airQualityMsgAnimate(fVal, fMax, airThreshold);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.w(TAG, "Failed to read value.", databaseError.toException());
+            }
+        };
+        databaseReference.child("db").child("sen_threshold").addValueEventListener(thresholdListener);
+
         maxListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 fMaxChecked = true;
                 fMax = dataSnapshot.getValue(Integer.class);
                 checkAllOk();
-                airQualityMsgAnimate(fVal, fMax);
+                airQualityMsgAnimate(fVal, fMax, airThreshold);
             }
 
             @Override
@@ -297,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
                 fValChecked = true;
                 fVal = dataSnapshot.getValue(Integer.class);
                 checkAllOk();
-                airQualityMsgAnimate(fVal, fMax);
+                airQualityMsgAnimate(fVal, fMax, airThreshold);
             }
 
             @Override
@@ -308,23 +223,24 @@ public class MainActivity extends AppCompatActivity {
         databaseReference.child("db").child("sen").addValueEventListener(valListener);
     }
 
-    private void airQualityMsgAnimate(int quality, int qualityLimit) {
+    private void airQualityMsgAnimate(int quality, int qualityLimit, int airThreshold) {
         int color;
         String msg;
-        int mediumQuality = qualityLimit / 2;
-        int thirdHalfQuality = (int) ((int) qualityLimit / 1.5);
-        if (quality >= mediumQuality && quality <= thirdHalfQuality) {
-//                warn
-            color = Color.parseColor("#eed202");
-            msg = "air quality is bad.";
-        } else if (quality < mediumQuality) {
+//        int mediumQuality = qualityLimit / 2;
+//        int thirdHalfQuality = (int) ((int) qualityLimit / 1.5);
+//        if (quality >= mediumQuality && quality <= thirdHalfQuality) {
+////                warn
+//            color = Color.parseColor("#eed202");
+//            msg = "air quality is bad.";
+//        } else
+            if (quality < airThreshold) {
 //                all ok
             color = Color.parseColor("#00ff00");
             msg = "air quality is good.";
         } else {
 //                danger
             color = Color.parseColor("#ff0000");
-            msg = "air quality is worst.";
+            msg = "air quality is bad.";
         }
         air_quality_msg.setText(msg);
         air_quality_msg.setTextColor(color);
@@ -363,47 +279,9 @@ public class MainActivity extends AppCompatActivity {
         temp_anim.start();
     }
 
-    private static final String CHANNEL_ID = "your_channel_id";
-    private static final CharSequence CHANNEL_NAME = "Your Channel Name";
-    private static final String CHANNEL_DESCRIPTION = "Your Channel Description";
-    private void warnByNotify(int cross_limit, int maintain_limit, int warn_for_what) {
-//        0 = limit   and     1 = temperature
-        String message;
-        String title;
-        int drawable;
-        if (warn_for_what == 0) {
-            message = "Limit is crossed " + cross_limit + " maintain limit under " + maintain_limit;
-            drawable = R.mipmap.notification_icon;
-            title = "Limit Crossed";
-        } else {
-            message = "High Temperature Detected " + cross_limit + "°c";
-            drawable = R.mipmap.tempreture_icon;
-            title = "High Temperature";
-        }
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(drawable)
-                .setContentTitle(title)
-                .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // Create a notification channel for Android Oreo and higher
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription(CHANNEL_DESCRIPTION);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        // Show the notification
-        notificationManager.notify(/* notificationId */ 1, builder.build());
-    }
-
     private void checkAllOk() {
         if (fMinChecked && fMaxChecked && fValChecked) {
             xValue = convertValueToRange(fVal, fMin, fMax, rMin, rMax);
-            Log.d(TAG, "X : " + xValue);
             updateScore(xValue, fVal);
         }
     }
@@ -421,10 +299,11 @@ public class MainActivity extends AppCompatActivity {
         int month = calendar.get(Calendar.MONTH) + 1; // Calendar.MONTH returns 0-based index
         int day = calendar.get(Calendar.DAY_OF_MONTH);
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
 
         dbRef = databaseReference.child("db/dates");
 
-        dbRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        dbRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 int dataLength = (int) dataSnapshot.getChildrenCount() - 1;
@@ -435,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onDataChange(DataSnapshot snapshot) {
                         fdate = snapshot.getValue(Integer.class);
                         fdateChecked = true;
-                        checkDates(day, month, year, hour, dataLength);
+//                        checkDates(day, month, year, hour, minute, dataLength);
                     }
 
                     @Override
@@ -450,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onDataChange(DataSnapshot snapshot) {
                         fmonth = snapshot.getValue(Integer.class);
                         fmonthChecked = true;
-                        checkDates(day, month, year, hour, dataLength);
+//                        checkDates(day, month, year, hour, minute, dataLength);
                     }
 
                     @Override
@@ -465,7 +344,26 @@ public class MainActivity extends AppCompatActivity {
                     public void onDataChange(DataSnapshot snapshot) {
                         fyear = snapshot.getValue(Integer.class);
                         fyearChecked = true;
-                        checkDates(day, month, year, hour, dataLength);
+//                        checkDates(day, month, year, hour, minute, dataLength);
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError error) {
+                        Log.e(TAG, "Failed to read year value.", error.toException());
+                    }
+                });
+
+                DatabaseReference fHourRef = dbRef.child(String.valueOf(dataLength)).child("hours");
+                fHourRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        HashMap<String, HashMap<String, Object>> hoursList = (HashMap<String, HashMap<String,java.lang.Object>>) snapshot.getValue();
+                        Set<String> keys = hoursList.keySet();
+                        int tempHour = hour;
+                        if (!keys.contains(String.valueOf(hour))) {
+                            tempHour = hour * -1;
+                        }
+                        checkDates(day, month, year, tempHour, minute, dataLength);
                     }
 
                     @Override
@@ -482,14 +380,16 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void checkDates(int cdate, int cmonth, int cyear, int chour, int dataLength) {
+    private void checkDates(int cdate, int cmonth, int cyear, int chour, int minute, int dataLength) {
         if (fdateChecked && fmonthChecked && fyearChecked && isFirst) {
             isFirst = false;
             if ((cdate == fdate) && (cmonth == fmonth) && (cyear == fyear)) {
                 // Same date, check hour
-                if (chour != fhour) {
+                if (chour < 0) {
+                    chour = chour * -1;
                     // Not same hour, create new entry
-                    dbRef.child(String.valueOf(dataLength)).child("hours").child(String.valueOf(chour)).setValue(new HourReading(fVal));
+                    String time = ((chour > 12) ? chour / 2 : chour) + ":" + minute + " " + ((chour > 12) ? "PM" : "AM");
+                    dbRef.child(String.valueOf(dataLength)).child("hours").child(String.valueOf(chour)).setValue(new HourReading(fVal, time, temperature));
 
                     DatabaseReference fReadingCheckRef = dbRef.child(String.valueOf(dataLength)).child("date_reading");
                     fReadingCheckRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -517,9 +417,12 @@ public class MainActivity extends AppCompatActivity {
                 dbRefNewEntry.child("month").setValue(cmonth);
                 dbRefNewEntry.child("year").setValue(cyear);
                 dbRefNewEntry.child("date_reading").setValue(fVal);
+                dbRefNewEntry.child("temp").setValue(temperature);
 
                 // Set first hour for the new date
-                dbRefNewEntry.child("hours").child(String.valueOf(chour)).setValue(new HourReading(fVal));
+
+                String time = ((chour > 12) ? chour / 2: chour) + ":" + minute + " " + ((chour > 12) ? "PM" : "AM");
+                dbRefNewEntry.child("hours").child(String.valueOf(chour)).setValue(new HourReading(fVal, time, temperature));
                 Log.d(TAG, "Updated ...");
             }
         }
@@ -528,13 +431,18 @@ public class MainActivity extends AppCompatActivity {
     // Model class for hour reading
     private static class HourReading {
         public int reading;
+        public String time;
+        public int temp;
 
         public HourReading() {
             // Default constructor required for Firebase
         }
 
-        public HourReading(int reading) {
+        public HourReading(int reading, String time, int temp) {
             this.reading = reading;
+            this.time = time;
+            this.temp = temp;
+
         }
     }
 
@@ -555,73 +463,7 @@ public class MainActivity extends AppCompatActivity {
         }, 0);
     }
 
-    private void noDataFoundTxt(int stateValue) {
-        noDataMessage.setVisibility(View.VISIBLE);
-        lineChart.setVisibility(View.GONE);
-        if (stateValue == 0) {
-            noDataMessage.setText("No Data Found");
-        } else if (stateValue == -1) {
-            noDataMessage.setText("Data is less than 3 days we can't show!");
-        } else if (stateValue == 1) {
-            noDataMessage.setText("Some Problem Occured");
-        }
-    }
 
-    private void hideDialog() {
-        dialogLayout.setVisibility(View.GONE);
-    }
-
-    private void setupLineChart() {
-        // Customize line chart appearance
-        lineChart.setDrawGridBackground(false);
-        lineChart.getDescription().setEnabled(false);
-        lineChart.setTouchEnabled(false);
-        lineChart.setDragEnabled(false);
-        lineChart.setScaleEnabled(false);
-        lineChart.setPinchZoom(false);
-        lineChart.setDoubleTapToZoomEnabled(false);
-
-        XAxis xAxis = lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(false);
-
-        YAxis leftAxis = lineChart.getAxisLeft();
-        leftAxis.setDrawGridLines(true);
-        leftAxis.setAxisMinimum(0f);
-
-        YAxis rightAxis = lineChart.getAxisRight();
-        rightAxis.setEnabled(false);
-    }
-
-    private void addRandomDataToChart(List<String> dates, List<Long> labels) {
-        List<Entry> entries = new ArrayList<>();
-
-        // Generate random data points
-        for (int i = 0; i < dates.size(); i++) {
-            entries.add(new Entry(i, labels.get(i)));
-        }
-
-        LineDataSet dataSet = new LineDataSet(entries, "Mater Data");
-        dataSet.setColor(Color.BLUE);
-        dataSet.setCircleColor(Color.BLUE);
-        dataSet.setLineWidth(2f);
-        dataSet.setCircleRadius(4f);
-        dataSet.setDrawCircleHole(false);
-        dataSet.setValueTextSize(10f);
-        dataSet.setDrawFilled(true);
-        dataSet.setFillAlpha(128);
-        dataSet.setFillColor(Color.BLUE);
-
-        List<ILineDataSet> dataSets = new ArrayList<>();
-        dataSets.add(dataSet);
-
-        LineData lineData = new LineData(dataSets);
-        XAxis xAxis = lineChart.getXAxis();
-        xAxis.setValueFormatter(new IndexAxisValueFormatter(dates)); // Set fixed labels for the X-axis
-
-        lineChart.setData(lineData);
-        lineChart.invalidate(); // Refresh chart
-    }
 }
 
 

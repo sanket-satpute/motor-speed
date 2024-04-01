@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Motor Speed</string>
+
+    <array name="spinner_items">
+        <item>Days</item>
+        <item>Hours</item>
+    </array>
 </resources>

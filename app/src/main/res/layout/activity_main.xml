@@ -30,9 +30,9 @@
         <LinearLayout
             android:id="@+id/speedometerLayout"
             android:layout_width="wrap_content"
-            android:layout_height="180dp"
+            android:layout_height="190dp"
             android:orientation="vertical"
-            android:paddingStart="105dp"
+            android:paddingStart="90dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -41,8 +41,10 @@
                 android:id="@+id/speedometerView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:scaleX="1.2"
-                android:scaleY="1.2" />
+                android:scaleX="1.3"
+                android:scaleY="1.3"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="20dp"/>
         </LinearLayout>
 
         <!-- Score Text -->

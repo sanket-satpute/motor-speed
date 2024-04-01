@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SecondActivity">
+
+    <RelativeLayout
+        android:id="@+id/heading_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_margin="22dp"
+        >
+        <TextView
+            android:id="@+id/heading_txt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="History"
+            android:textSize="22sp"
+            android:fontFamily="sans-serif"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"/>
+
+        <ImageView
+            android:id="@+id/close_page_btn"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:alpha="0.7"
+            android:src="@drawable/close_cross_svgrepo_com"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            />
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/air_quality_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="22dp"
+        android:layout_marginTop="44dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/heading_layout"
+        >
+        <RelativeLayout
+            android:id="@+id/air_quality_layout_child"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            >
+            <TextView
+                android:id="@+id/title_txt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Air Quality"
+                android:textSize="18sp"
+                android:fontFamily="sans-serif"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                />
+
+            <Spinner
+                android:id="@+id/mySpinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/spinner_drawable"
+                android:popupBackground="@android:color/white"
+                android:spinnerMode="dropdown"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:dropDownVerticalOffset="40dp"
+                android:dropDownWidth="match_parent"
+                android:layoutDirection="ltr"
+                android:layout_marginEnd="15dp"
+                android:popupElevation="10dp"
+                android:layout_marginLeft="0dp"
+                android:layout_marginRight="0dp"
+                android:textAlignment="center" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_below="@id/air_quality_layout_child"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:minHeight="150dp"
+            >
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_centerInParent="true"
+                android:layout_margin="16dp"
+                android:minHeight="200dp"/>
+
+            <!-- No Data Message -->
+            <TextView
+                android:id="@+id/noDataMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data Found"
+                android:textSize="18sp"
+                android:visibility="visible"
+                android:layout_centerInParent="true"/>
+        </RelativeLayout>
+    </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:id="@+id/temp_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="22dp"
+        android:layout_marginTop="26dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/air_quality_layout"
+        >
+        <RelativeLayout
+            android:id="@+id/temp_layout_child"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            >
+            <TextView
+                android:id="@+id/title_txtTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Temperature"
+                android:textSize="18sp"
+                android:fontFamily="sans-serif"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                />
+
+            <Spinner
+                android:id="@+id/mySpinnerTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/spinner_drawable"
+                android:popupBackground="@android:color/white"
+                android:spinnerMode="dropdown"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:dropDownVerticalOffset="40dp"
+                android:dropDownWidth="match_parent"
+                android:layoutDirection="ltr"
+                android:layout_marginEnd="15dp"
+                android:popupElevation="10dp"
+                android:layout_marginLeft="0dp"
+                android:layout_marginRight="0dp"
+                android:textAlignment="center" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/layoutTemp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_below="@id/temp_layout_child"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:minHeight="150dp"
+            >
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/chartTemp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_centerInParent="true"
+                android:layout_margin="16dp"
+                android:minHeight="200dp"/>
+
+            <!-- No Data Message -->
+            <TextView
+                android:id="@+id/noDataMessageTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Dat Found"
+                android:textSize="18sp"
+                android:visibility="visible"
+                android:layout_centerInParent="true"/>
+        </RelativeLayout>
+    </RelativeLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
