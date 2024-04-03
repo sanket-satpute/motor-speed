@@ -7,6 +7,9 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
@@ -14,6 +17,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -45,7 +49,14 @@ public class BackgroundIntentService extends Service {
             SERVICE_IS_ON = true;
             try {
                 Notification serviceObj = createNotification();
-                startForeground(NOTIFICATION_ID, serviceObj);
+                if (Build.VERSION.SDK_INT >= 34) {
+                    startForeground(
+                            NOTIFICATION_ID,
+                            serviceObj,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                }else {
+                    startForeground(NOTIFICATION_ID, serviceObj);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -133,7 +144,7 @@ public class BackgroundIntentService extends Service {
 
     private void notifyHighTemperature(int temp) {
         // Notification channel constants
-        String CHANNEL_ID = "temp_channel_id";
+        String CHANNEL_ID = "foreground_channel";//"temp_channel_id";
         CharSequence CHANNEL_NAME = "Temperature Channel Name";
         String CHANNEL_DESCRIPTION = "Temperature Channel Description";
 
@@ -141,20 +152,21 @@ public class BackgroundIntentService extends Service {
         int drawable = R.mipmap.tempreture_icon;
         String title = "High Temperature";
 
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
+            channel.setDescription(CHANNEL_DESCRIPTION);
+            notificationManager.createNotificationChannel(channel);
+        }
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(drawable)
                 .setContentTitle(title)
                 .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setAutoCancel(true)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription(CHANNEL_DESCRIPTION);
-            notificationManager.createNotificationChannel(channel);
-        }
 
         notificationManager.notify(2, builder.build());
     }
@@ -176,13 +188,14 @@ public class BackgroundIntentService extends Service {
                 .setSmallIcon(drawable)
                 .setContentTitle(title)
                 .setContentText(message)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE)
+                .setPriority(NotificationCompat.PRIORITY_MAX);
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         // Create a notification channel for Android Oreo and higher
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription(CHANNEL_DESCRIPTION);
             notificationManager.createNotificationChannel(channel);
         }
@@ -209,10 +222,11 @@ public class BackgroundIntentService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
                 .setContentTitle("Foreground Service Title")
                 .setContentText("Foreground Service Content")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE)
+                .setPriority(NotificationCompat.PRIORITY_MAX);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH);
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
             builder.setChannelId(channelId);

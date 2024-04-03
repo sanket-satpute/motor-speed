@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,9 +24,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -357,13 +360,25 @@ public class MainActivity extends AppCompatActivity {
                 fHourRef.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot snapshot) {
-                        HashMap<String, HashMap<String, Object>> hoursList = (HashMap<String, HashMap<String,java.lang.Object>>) snapshot.getValue();
-                        Set<String> keys = hoursList.keySet();
-                        int tempHour = hour;
-                        if (!keys.contains(String.valueOf(hour))) {
-                            tempHour = hour * -1;
+                        Object data = snapshot.getValue();
+                        if (data instanceof HashMap) {
+                            HashMap<String, HashMap<String, Object>> hoursList = (HashMap<String, HashMap<String,Object>>) data;
+                            Set<String> keys = hoursList.keySet();
+                            int tempHour = hour;
+                            if (!keys.contains(String.valueOf(hour))) {
+                                tempHour = hour * -1;
+                            }
+                            checkDates(day, month, year, tempHour, minute, dataLength);
+                        } else if (data instanceof ArrayList) {
+                            ArrayList<HashMap<String, Object>> dataList = (ArrayList<HashMap<String, Object>>) data;
+                            int tempHour = hour;
+                            if (dataList.get(dataList.size() - 1) != null) {
+                                tempHour = hour * -1;
+                            }
+                            checkDates(day, month, year, tempHour, minute, dataLength);
+                        } else {
+                            Log.e(TAG, "Unexpected data type: " + data.getClass().getSimpleName());
                         }
-                        checkDates(day, month, year, tempHour, minute, dataLength);
                     }
 
                     @Override
