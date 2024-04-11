@@ -207,7 +207,14 @@ public class SecondActivity extends AppCompatActivity {
 
         // Generate random data points
         for (int i = 0; i < dates.size(); i++) {
-            entries.add(new Entry(i, labels.get(i)));
+            if (labels != null) {
+                if(labels.get(i) != null)
+                    entries.add(new Entry(i, labels.get(i)));
+                else
+                    entries.add(new Entry(i, 0));
+            } else {
+                entries.add(new Entry(i, 0));
+            }
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "air quality " + whatItIs);
@@ -353,7 +360,14 @@ public class SecondActivity extends AppCompatActivity {
         List<Entry> entries = new ArrayList<>();
 
         for (int i = 0; i < dates.size(); i++) {
-            entries.add(new Entry(i, labels.get(i)));
+            if (labels != null) {
+                if(labels.get(i) != null)
+                    entries.add(new Entry(i, labels.get(i)));
+                else
+                    entries.add(new Entry(i, 0));
+            } else {
+                entries.add(new Entry(i, 0));
+            }
         }
 
         LineDataSet dataSet = new LineDataSet(entries, "High Temperature " + whatItIs);
